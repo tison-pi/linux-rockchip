@@ -424,7 +424,7 @@ static void gtp_touch_down(struct goodix_ts_data* ts,s32 id,s32 x,s32 y,s32 w)
 {
 	if (gtp_change_x2y)
 		GTP_SWAP(x, y);
-
+    GTP_INFO("======> GTP bool: %d", !bgt911 && !bgt970);
 	if (!bgt911 && !bgt970) {
 		if (gtp_x_reverse)
 			x = ts->abs_x_max - x;
@@ -2651,6 +2651,7 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
     	return -EINVAL;
     }
 
+    GTP_INFO("========> GTP val: %d", val);
 	if (val == 89) {
 		m89or101 = TRUE;
 		gtp_change_x2y = TRUE;
@@ -2663,10 +2664,10 @@ static int goodix_ts_probe(struct i2c_client *client, const struct i2c_device_id
 		gtp_y_reverse = FALSE;
 	} else if (val == 911) {
 		m89or101 = FALSE;
-		bgt911 = TRUE;
+		// bgt911 = TRUE;
 		gtp_change_x2y = TRUE;
-		gtp_x_reverse = FALSE;
-		gtp_y_reverse = TRUE;
+		gtp_x_reverse = TRUE;
+		gtp_y_reverse = FALSE;
 	} else if (val == 9110) {
 		m89or101 = FALSE;
 		bgt9110 = TRUE;

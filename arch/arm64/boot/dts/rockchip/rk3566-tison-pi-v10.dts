@@ -1,0 +1,252 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/display/media-bus-format.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+#include "rk3566.dtsi"
+#include <dt-bindings/display/rockchip_vop.h>
+
+
+//tspi核心配置层，这里是几乎后期不需要怎么改动
+#include "rk3566-tison-pi-v10.dtsi"
+
+//【开/关】EDP 显示屏幕配置，用户可以基于此复制自己的屏幕，注意EDP与MIPI屏幕互斥，因为共用了VOP如果需要同显自行修改
+// #include "rk3566-tison-pi-edp-v10.dtsi"
+
+//【开/关】mipi 显示屏幕配置，用户可以基于此复制自己的屏幕，注意EDP与MIPI屏幕互斥，因为共用了VOP如果需要同显自行修改
+#include "rk3566-tison-pi-dsi-v10.dtsi"
+
+//【开/关】HDMI 显示屏幕配置，里面内容几乎可以不用动，如果不需要hdmi显示直接注释掉即可
+#include "rk3566-tison-pi-hdmi-v10.dtsi"
+
+//【开/关】摄像头 目前视频的是ov5659
+#include "rk3566-tison-pi-csi-v10.dtsi"
+
+// 开/关】网口 扩展板上使用的是千兆网，不接扩展板情况下可以关闭
+#include "rk3566-tison-pi-gmac1-v10.dtsi"
+
+//【开/关】下方是用户定义层，所有用户修改理论上在此下方修改就好了
+/ {
+	model = "Tison Pi v10 board";
+	compatible = "lckfb,tison-pi-v10", "rockchip,rk3566";
+
+	rk_headset: rk-headset {
+		compatible = "rockchip_headset";
+		headset_gpio = <&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hp_det>;
+	};
+
+	leds: leds {
+		compatible = "gpio-leds";
+		rgb_led_r: rgb-led-r {
+			gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "timer";
+			linux,delay-reg = <0>;   		// 延时注册
+			linux,blink-delay-on = <500>; 	// 打开时间
+			linux,blink-delay-off = <500>;	// 关闭时间
+		};
+		rgb_led_g: rgb-led-g {
+			gpios = <&gpio1 RK_PB1 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "timer";
+			linux,delay-reg = <100>;   		// 延时注册
+			linux,blink-delay-on = <1000>; 
+			linux,blink-delay-off = <1000>;
+		};
+		rgb_led_b: rgb-led-b {
+			gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "timer";
+			linux,delay-reg = <100>;  		// 延时注册
+			linux,blink-delay-on = <1500>; 
+			linux,blink-delay-off = <1500>;
+		};
+	};
+
+};
+
+&usbhost_dwc3 {
+	phys = <&u2phy0_host>; 
+	phy-names = "usb2-phy";
+	maximum-speed = "high-speed"; 
+	status = "okay";
+};
+&combphy1_usq {
+	rockchip,dis-u3otg1-port; 
+	status = "okay";
+};
+
+&sata1 {
+	rockchip,enable-ssc;
+	status = "okay";
+};
+
+&pinctrl {
+	headphone {
+		hp_det: hp-det {
+			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+	ex39_usb {
+		ex39_usb_vcc5v0_host_en: ex39-usb-vcc5v0-host-en {
+			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+	dsi1 {
+		touch_gpio: touch-gpio {
+			rockchip,pins = <1 RK_PA0 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+};
+
+//用户三色灯
+&leds {
+	status = "okay";
+};
+
+//耳机插入检测，不使用扩展板情况需关闭，否则默认会检测到耳机插入
+&rk_headset {
+	status = "disabled";
+};
+
+//用户串口3
+&uart3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart3m1_xfer>;
+};
+
+&i2c1 {
+	status = "okay";
+	goodix_ts@5d {
+		compatible = "goodix,gt9xx";
+		reg = <0x5d>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&touch_gpio>;
+        touch-gpio = <&gpio1 RK_PA0 IRQ_TYPE_LEVEL_LOW>;
+        reset-gpio = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;
+		// goodix,irq-gpio = <&gpio1 RK_PA0 IRQ_TYPE_LEVEL_LOW>;   //中断IO
+		// goodix,rst-gpio = <&gpio1 RK_PA1 GPIO_ACTIVE_LOW>;      //复位IO
+		max-x = <800>;   //x方向解析度
+		max-y = <1280>;  //y方向解析度
+		tp-size = <911>; //TP尺寸
+		goodix,cfg-group0 = [
+			42 D0 02 00 05 05 75 01 01 0F 24 
+			0F 64 3C 03 05 00 00 00 02 00 00 
+			00 16 19 1C 14 8C 0E 0E 24 00 31 
+			0D 00 00 00 83 33 1D 00 41 00 00 
+			00 00 00 08 0A 00 2B 1C 3C 94 D5 
+			03 08 00 00 04 93 1E 00 82 23 00 
+			74 29 00 69 2F 00 5F 37 00 5F 20 
+			40 60 00 F0 40 30 55 50 27 00 00 
+			00 00 00 00 00 00 00 00 00 00 00 
+			00 00 00 00 00 00 00 14 19 00 00 
+			50 50 02 04 06 08 0A 0C 0E 10 12 
+			14 16 18 1A 1C 00 00 00 00 00 00 
+			00 00 00 00 00 00 00 00 00 00 1D 
+			1E 1F 20 21 22 24 26 28 29 2A 1C 
+			18 16 14 13 12 10 0F 0C 0A 08 06 
+			04 02 00 00 00 00 00 00 00 00 00 
+			00 00 00 00 00 00 00 00 9C 01
+		];
+		goodix,cfg-group2 = [
+			48 D0 02 00 05 05 75 01 01 0F 24 
+			0F 64 3C 03 05 00 00 00 02 00 00 
+			00 16 19 1C 14 8C 0E 0E 24 00 31 
+			0D 00 00 00 83 33 1D 00 41 00 00 
+			3C 0A 14 08 0A 00 2B 1C 3C 94 D5 
+			03 08 00 00 04 93 1E 00 82 23 00 
+			74 29 00 69 2F 00 5F 37 00 5F 20 
+			40 60 00 F0 40 30 55 50 27 00 00 
+			00 00 00 00 00 00 00 00 00 00 00 
+			00 00 00 00 00 00 00 14 19 00 00 
+			50 50 02 04 06 08 0A 0C 0E 10 12 
+			14 16 18 1A 1C 00 00 00 00 00 00 
+			00 00 00 00 00 00 00 00 00 00 1D 
+			1E 1F 20 21 22 24 26 28 29 2A 1C 
+			18 16 14 13 12 10 0F 0C 0A 08 06 
+			04 02 00 00 00 00 00 00 00 00 00 
+			00 00 00 00 00 00 00 00 3C 01
+		];
+	};
+};
+
+//用户I2C2
+&i2c2 {
+	status = "okay";
+};
+
+&i2c3 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c3m1_xfer>;
+};
+
+
+&spi3 {
+	status = "okay";
+	max-freq = <48000000>;
+	dma-names = "tx","rx";
+	pinctrl-names = "default", "high_speed";
+	pinctrl-0 = <&spi3m1_cs0 &spi3m1_pins>;
+	pinctrl-1 = <&spi3m1_cs0 &spi3m1_pins_hs>;
+	spi_test@10 {
+		compatible ="rockchip,spi_test_bus1_cs0";
+		reg = <0>;
+		spi-max-frequency = <24000000>;
+		status = "okay";
+	};
+};
+
+&pwm8 {
+	status = "okay";
+};
+
+&pwm9 {
+	status = "okay";
+};
+
+&pwm14 {
+	status = "okay";
+};
+
+//pwd 15遥控器
+&pwm15 {
+	status = "okay";
+	compatible = "rockchip,remotectl-pwm";
+	remote_pwm_id = <3>;
+	handle_cpu_id = <1>;
+	remote_support_psci = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm15m0_pins>;
+
+	//用户自定方法：adb设置输出日志并通过dmesg确定usercode=address与key_table=command
+	//echo 1 > sys/module/rockchip_pwm_remotectl/parameters/code_print
+	//键值可在 include/dt-bindings/input/linux-event-codes.h 中查找
+	ir_key1 {
+		rockchip,usercode = <0xff00>;
+		rockchip,key_table =
+			<0xf2	KEY_MENU>,
+			<0xe9	KEY_BACK>,
+			<0xe3	KEY_ENTER>,
+			<0xe7	KEY_UP>,
+			<0xad	KEY_DOWN>,
+			<0xf7	KEY_LEFT>,
+			<0xa5	KEY_RIGHT>,
+			<0xba	KEY_1>,
+			<0xb9	KEY_2>,
+			<0xb8	KEY_3>,
+			<0xbb	KEY_4>,
+			<0xbf	KEY_5>,
+			<0xbc	KEY_6>,
+			<0xf8	KEY_7>,
+			<0xea	KEY_8>,
+			<0xf6	KEY_9>,
+			<0xe6	KEY_0>;
+	};
+};

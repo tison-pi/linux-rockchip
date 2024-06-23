@@ -40,7 +40,7 @@
 //#include <linux/earlysuspend.h>
 
 #define CONFIG_8_9  0
-#define DEBUG_SWITCH  0
+#define DEBUG_SWITCH  1
 
 //***************************PART1:ON/OFF define*******************************
 #define GTP_CUSTOM_CFG        0
@@ -278,8 +278,8 @@ struct goodix_ts_data {
 
 // STEP_3(optional): Specify your special config info if needed
 #if GTP_CUSTOM_CFG
-  #define GTP_MAX_HEIGHT   800
-  #define GTP_MAX_WIDTH    480
+  #define GTP_MAX_HEIGHT   1280
+  #define GTP_MAX_WIDTH    800
   #define GTP_INT_TRIGGER  0            // 0: Rising 1: Falling
 #else
   #define GTP_MAX_HEIGHT   4096
